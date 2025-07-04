@@ -14,12 +14,14 @@ def main():
         conn, addr = server.accept() # wait for client
         print(f"Accepted connection from {addr}")
 
-        message_id = struct.pack(">i",0)
+        message_size = struct.pack(">i",0)
         correlation_id = struct.pack(">i",7)
 
-        response = message_id + correlation_id
+        response = message_size + correlation_id
 
         conn.sendall(response)
+        conn.shutdown(socket.SHUT_WR)
+        conn.recv(1024)
         conn.close()
 
 if __name__ == "__main__":
