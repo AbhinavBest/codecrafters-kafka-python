@@ -26,6 +26,13 @@ def main():
         else:
             error_code = struct.pack(">h",0)
 
+        api_versions_count = struct.pack(">i", 1)  # one entry
+        api_key = struct.pack(">h", 18)  # API_VERSIONS
+        min_version = struct.pack(">h", 0)
+        max_version = struct.pack(">h", 4)
+
+        response_body = error_code + api_versions_count + api_key + min_version + max_version
+
         correlation_id_bytes = data[header_offset:header_offset+4]
         correlation_id = struct.unpack(">i", correlation_id_bytes)[0]
         print(f"Parsed correlation_id: {correlation_id}")
@@ -33,7 +40,7 @@ def main():
         # Build response
         message_size = struct.pack(">i", 0)
         response_correlation_id = struct.pack(">i", correlation_id)
-        response = message_size + response_correlation_id + error_code
+        response = message_size + response_correlation_id + response_body
 
         # Send response and close
         conn.sendall(response)
