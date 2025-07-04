@@ -4,12 +4,17 @@ import struct
 
 class KafkaProtocol(Protocol):
     def dataReceived(self, data: bytes):
-        print("Received data from client")
-        message_size = struct.pack(">i", 4)
-        correlation_id = struct.pack(">i", 7)
-        response = message_size + correlation_id
+        print(f"Received data of length {len(data)}")
+
+        header_offset = 4 + 2 + 2
+        correlation_id_bytes = data[header_offset:header_offset+4]
+        correlation_id = struct.unpack(">i", correlation_id_bytes)[0]
+        print(f"Parsed correlation_id: {correlation_id}")
+        message_size = struct.pack(">i", 0)
+        response_correlation_id = struct.pack(">i",correlation_id)
+        response = message_size + response_correlation_id
         self.transport.write(response)
-        print("Sent response with correlation_id=7")
+        print(f"Sent response with correlation_id={correlation_id}")
 
 class KafkaFactory(Factory):
     def buildProtocol(self, addr):
