@@ -26,7 +26,7 @@ def main():
             error_code = struct.pack(">h", 0)
             print("Supported version, responding with error_code=0")
 
-        api_versions_count = struct.pack(">i", 1)
+        api_versions_count = b'\x02' 
         api_key = struct.pack(">h", 18)
         min_version = struct.pack(">h", 0)
         max_version = struct.pack(">h", 4)
