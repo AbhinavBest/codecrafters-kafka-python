@@ -36,12 +36,11 @@ def main():
         correlation_id_bytes = data[header_offset:header_offset+4]
         correlation_id = struct.unpack(">i", correlation_id_bytes)[0]
         print(f"Parsed correlation_id: {correlation_id}")
-
+        response_correlation_id = struct.pack(">i", correlation_id)
+        
         # Build response
         total_length = len(response_correlation_id + response_body)
         message_size = struct.pack(">i", total_length)
-
-        response_correlation_id = struct.pack(">i", correlation_id)
         response = message_size + response_correlation_id + response_body
 
         # Send response and close
