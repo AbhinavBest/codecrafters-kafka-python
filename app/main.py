@@ -1,28 +1,24 @@
+from twisted.internet.protocol import Protocol, Factory
+from twisted.internet import reactor
 import struct
-import socket  # noqa: F401
 
+class KafkaProtocol(Protocol):
+    def dataReceived(self, data: bytes):
+        print("Received data from client")
+        message_size = struct.pack(">i", 4)
+        correlation_id = struct.pack(">i", 7)
+        response = message_size + correlation_id
+        self.transport.write(response)
+        print("Sent response with correlation_id=7")
+
+class KafkaFactory(Factory):
+    def buildProtocol(self, addr):
+        return KafkaProtocol()
 
 def main():
-    # You can use print statements as follows for debugging,
-    # they'll be visible when running tests.
-    print("Logs from your program will appear here!")
-
-    # Uncomment this to pass the first stage
-    #
-    server = socket.create_server(("localhost", 9092), reuse_port=True)
-    while True:
-        conn, addr = server.accept() # wait for client
-        print(f"Accepted connection from {addr}")
-
-        message_size = struct.pack(">i",0)
-        correlation_id = struct.pack(">i",7)
-
-        response = message_size + correlation_id
-
-        conn.sendall(response)
-        conn.shutdown(socket.SHUT_WR)
-        conn.recv(1024)
-        conn.close()
+    print("Starting Twisted Kafka-like broker on port 9092...")
+    reactor.listenTCP(9092, KafkaFactory(), interface="localhost")
+    reactor.run()
 
 if __name__ == "__main__":
     main()
