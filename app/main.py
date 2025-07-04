@@ -16,22 +16,28 @@ def main():
         data = conn.recv(1024)
         print(f"Received data of length {len(data)}")
 
-        # Parse correlation_id
         header_offset = 4 + 2 + 2
+
+        request_api_bytes = data[6:8]
+        request_api = struct.unpack(">h",request_api_bytes)[0]
+
+        if request_api > 4 or request_api < 0:
+            error_code = struct.pack(">h",35)
+        else:
+            error_code = struct.pack(">h",0)
+
         correlation_id_bytes = data[header_offset:header_offset+4]
         correlation_id = struct.unpack(">i", correlation_id_bytes)[0]
         print(f"Parsed correlation_id: {correlation_id}")
 
         # Build response
-        message_size = struct.pack(">i", 0)  # any value works
+        message_size = struct.pack(">i", 0)
         response_correlation_id = struct.pack(">i", correlation_id)
-        response = message_size + response_correlation_id
+        response = message_size + response_correlation_id + error_code
 
-        # Send response
+        # Send response and close
         conn.sendall(response)
         print(f"Sent response with correlation_id={correlation_id}")
-
-        # Close client connection
         conn.close()
 
 if __name__ == "__main__":
