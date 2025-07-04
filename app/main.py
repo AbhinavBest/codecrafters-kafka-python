@@ -38,7 +38,9 @@ def main():
         print(f"Parsed correlation_id: {correlation_id}")
 
         # Build response
-        message_size = struct.pack(">i", 0)
+        total_length = len(response_correlation_id + response_body)
+        message_size = struct.pack(">i", total_length)
+
         response_correlation_id = struct.pack(">i", correlation_id)
         response = message_size + response_correlation_id + response_body
 
