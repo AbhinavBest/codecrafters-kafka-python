@@ -34,8 +34,6 @@ def main():
         throttle_time_ms = struct.pack(">i", 0)
         finalized_features = b'\x00'    # empty COMPACT_ARRAY
         supported_features = b'\x00'    # empty COMPACT_ARRAY
-        finalized_features_epoch = struct.pack(">q", -1)  # INT64
-        zkMigrationReady = b'\x00'  # boolean False
         tag_buffer = b'\x00'        # empty TAG_BUFFER
 
         response_body = (
@@ -45,8 +43,6 @@ def main():
             throttle_time_ms +
             finalized_features +
             supported_features +
-            finalized_features_epoch +
-            zkMigrationReady +
             tag_buffer
         )
         correlation_id_bytes = data[header_offset:header_offset+4]
