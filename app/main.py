@@ -2,67 +2,65 @@ import socket
 import struct
 
 def main():
-    print("Starting ApiVersions (v4) broker on port 9092...")
+    print("Starting plain-socket Kafka-like broker on port 9092...")
 
+    # Create TCP server socket
     server = socket.create_server(("localhost", 9092), reuse_port=True)
 
     while True:
+        # Wait for client
         conn, addr = server.accept()
         print(f"Accepted connection from {addr}")
 
+        # Receive request (can adjust buffer size; 1024 is fine for now)
         data = conn.recv(1024)
         print(f"Received data of length {len(data)}")
 
-        # Parse request header v2
-        api_key = struct.unpack(">h", data[4:6])[0]
-        api_version = struct.unpack(">h", data[6:8])[0]
+        request_api_bytes = data[6:8]
+        request_api = struct.unpack(">h",request_api_bytes)[0]
+
+        if request_api > 4 or request_api < 0:
+            error_code = struct.pack(">h",35)
+        else:
+            error_code = struct.pack(">h",0)
+
+        api_key_recieved = struct.unpack(">h",data[4,6])[0]
+        api_version_recieved = struct.unpack(">h",data[6:8])[0]
         correlation_id = struct.unpack(">i", data[8:12])[0]
-        print(f"Parsed api_key={api_key}, api_version={api_version}, correlation_id={correlation_id}")
+        print(f"Parsed api_key={api_key_recieved}, api_version={api_version_recieved}, correlation_id={correlation_id}")
 
-        # === Build response ===
+        # Build response
 
+        num_api_keys = struct.pack(">b",2)
 
-        # Response header v0
-        response_correlation_id = struct.pack(">i", correlation_id)
+        api_key = struct.pack(">h",18)
+        min_version = struct.pack(">h",0)
+        max_version = struct.pack(">h",0)
 
-        # Response body
-        error_code = struct.pack(">h", 0)
+        api_keys = api_key + min_version + max_version
 
-        num_api_keys = struct.pack(">b", 2)  # INT8, value 1
+        tag_buffer = b'\0x00'
 
-        api_key = struct.pack(">h", 18)  # APIVersions
-        min_version = struct.pack(">h", 0)
-        max_version = struct.pack(">h", 4)
+        throttle_time_ms = struct.pack(">i",0)
 
-        api_keys_entry = api_key + min_version + max_version
-
-        # After array: TAG_BUFFER, here: varuint=0
-        tag_buffer_after_api_keys = b'\x00'
-
-        throttle_time_ms = struct.pack(">i", 0)
-
-        # After throttle_time_ms: another TAG_BUFFER
-        tag_buffer_after_throttle = b'\x00'
-
-        response_body = (
+        response_body = {
             error_code +
             num_api_keys +
-            api_keys_entry +
-            tag_buffer_after_api_keys +
+            api_keys +
+            tag_buffer +
             throttle_time_ms +
-            tag_buffer_after_throttle
-        )
+            tag_buffer
+        }
+        
+        response_payload = response_correlation_id + response_body
 
-        payload = response_correlation_id + response_body
-        message_size = struct.pack(">i", len(payload))
+        message_size = struct.pack(">i", len(response_payload))
+        response_correlation_id = struct.pack(">i", correlation_id)
+        response = message_size + response_payload
 
-        response = message_size + payload
-
-        print(f"Response hex: {response.hex()}")
-        print(f"Total length={len(response)}")
-
+        # Send response and close
         conn.sendall(response)
-        print(f"Sent ApiVersions response (total length={len(response)})")
+        print(f"Sent response with correlation_id={correlation_id}")
         conn.close()
 
 if __name__ == "__main__":
