@@ -58,6 +58,9 @@ def main():
 
         response = message_size + payload
 
+        print(f"Response hex: {response.hex()}")
+        print(f"Total length={len(response)}")
+
         conn.sendall(response)
         print(f"Sent ApiVersions response (total length={len(response)})")
         conn.close()
