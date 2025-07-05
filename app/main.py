@@ -24,7 +24,7 @@ def main():
         else:
             error_code = struct.pack(">h",0)
 
-        api_key_recieved = struct.unpack(">h",data[4,6])[0]
+        api_key_recieved = struct.unpack(">h",data[4:6])[0]
         api_version_recieved = struct.unpack(">h",data[6:8])[0]
         correlation_id = struct.unpack(">i", data[8:12])[0]
         print(f"Parsed api_key={api_key_recieved}, api_version={api_version_recieved}, correlation_id={correlation_id}")
