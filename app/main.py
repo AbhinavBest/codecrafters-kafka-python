@@ -21,6 +21,7 @@ def main():
 
         # === Build response ===
 
+
         # Response header v0
         response_correlation_id = struct.pack(">i", correlation_id)
 
