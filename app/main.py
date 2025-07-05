@@ -13,9 +13,7 @@ def main():
         data = conn.recv(1024)
         print(f"Received data of length {len(data)}")
 
-        # Parse request header
-        # request header v2: api_key(int16), api_version(int16), correlation_id(int32), client_id(string)
-
+        # Parse request header v2
         api_key = struct.unpack(">h", data[4:6])[0]
         api_version = struct.unpack(">h", data[6:8])[0]
         correlation_id = struct.unpack(">i", data[8:12])[0]
@@ -26,31 +24,41 @@ def main():
         # Response header v0
         response_correlation_id = struct.pack(">i", correlation_id)
 
-        # Response body:
+        # Response body
         error_code = struct.pack(">h", 0)
 
-        # ApiKeys array: 1 element, key=18, min_version=0, max_version=4
-        api_keys_array_len = struct.pack(">i", 1)
+        num_api_keys = struct.pack(">b", 1)  # INT8, value 1
 
-        api_key_18 = struct.pack(">h", 18)
+        api_key = struct.pack(">h", 18)  # APIVersions
         min_version = struct.pack(">h", 0)
         max_version = struct.pack(">h", 4)
 
-        api_keys_entry = api_key_18 + min_version + max_version
+        api_keys_entry = api_key + min_version + max_version
 
-        # ThrottleTimeMs
+        # After array: TAG_BUFFER, here: varuint=0
+        tag_buffer_after_api_keys = b'\x00'
+
         throttle_time_ms = struct.pack(">i", 0)
 
-        response_body = error_code + api_keys_array_len + api_keys_entry + throttle_time_ms
+        # After throttle_time_ms: another TAG_BUFFER
+        tag_buffer_after_throttle = b'\x00'
 
-        # Compute message size (excluding the first 4 bytes)
+        response_body = (
+            error_code +
+            num_api_keys +
+            api_keys_entry +
+            tag_buffer_after_api_keys +
+            throttle_time_ms +
+            tag_buffer_after_throttle
+        )
+
         payload = response_correlation_id + response_body
         message_size = struct.pack(">i", len(payload))
 
         response = message_size + payload
 
         conn.sendall(response)
-        print(f"Sent ApiVersions response (len={len(response)})")
+        print(f"Sent ApiVersions response (total length={len(response)})")
         conn.close()
 
 if __name__ == "__main__":
