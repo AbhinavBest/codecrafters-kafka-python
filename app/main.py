@@ -31,6 +31,8 @@ def main():
 
         # Build response
 
+        response_correlation_id = struct.pack(">i", correlation_id)
+
         num_api_keys = struct.pack(">b",2)
 
         api_key = struct.pack(">h",18)
@@ -43,16 +45,15 @@ def main():
 
         throttle_time_ms = struct.pack(">i",0)
 
-        response_body = {
+        response_body = (
             error_code +
             num_api_keys +
             api_keys +
             tag_buffer +
             throttle_time_ms +
             tag_buffer
-        }
+        )
         
-        response_correlation_id = struct.pack(">i", correlation_id)
 
         response_payload = response_correlation_id + response_body
 
