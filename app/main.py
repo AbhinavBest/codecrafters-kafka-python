@@ -37,11 +37,11 @@ def main():
 
         api_key = struct.pack(">h",18)
         min_version = struct.pack(">h",0)
-        max_version = struct.pack(">h",0)
+        max_version = struct.pack(">h",4)
 
         api_keys = api_key + min_version + max_version
 
-        tag_buffer = b'\0x00'
+        tag_buffer = b'\x00'
 
         throttle_time_ms = struct.pack(">i",0)
 
