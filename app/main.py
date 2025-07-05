@@ -52,10 +52,11 @@ def main():
             tag_buffer
         }
         
+        response_correlation_id = struct.pack(">i", correlation_id)
+
         response_payload = response_correlation_id + response_body
 
         message_size = struct.pack(">i", len(response_payload))
-        response_correlation_id = struct.pack(">i", correlation_id)
         response = message_size + response_payload
 
         # Send response and close
