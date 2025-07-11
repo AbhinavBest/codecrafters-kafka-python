@@ -62,7 +62,6 @@ def handleClient(conn):
                 error_code +
                 num_api_keys +
                 api_keys +
-                tag_buffer +
                 throttle_time_ms +
                 tag_buffer
             )
