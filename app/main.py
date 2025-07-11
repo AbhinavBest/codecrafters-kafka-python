@@ -35,14 +35,24 @@ def handleClient(conn):
             # Build response
 
             response_correlation_id = struct.pack(">i", correlation_id)
+            
+            def pack_api_key_entry(api_key, min_version, max_version):
+                return (
+                    struct.pack(">h", api_key) +
+                    struct.pack(">h", min_version) +
+                    struct.pack(">h", max_version)
+                )
+            supported_api_versions = {
+                (18,0,4)
+                (75,0,0)
+            }
 
             num_api_keys = struct.pack(">b",2)
-
-            api_key = struct.pack(">h",18)
-            min_version = struct.pack(">h",0)
-            max_version = struct.pack(">h",4)
-
-            api_keys = api_key + min_version + max_version
+            
+            api_keys = b''.join(
+                pack_api_key_entry(api_k,min_v,max_v)
+                for api_k,min_v,max_v in supported_api_versions
+            )
 
             tag_buffer = b'\x00'
 
