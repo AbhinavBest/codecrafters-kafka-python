@@ -1,34 +1,35 @@
 import socket
 import struct
 
-def main():
-    print("Starting plain-socket Kafka-like broker on port 9092...")
-
-    # Create TCP server socket
-    server = socket.create_server(("localhost", 9092), reuse_port=True)
-
+def handleClient(conn):
     while True:
-        # Wait for client
-        conn, addr = server.accept()
-        print(f"Accepted connection from {addr}")
+        header = conn.recv(4)
+        if not header:
+            print("Client closed connection")
+            break
+        if len(header) < 4:
+            print("Incomplete connection request")
+            break
+        msg_len = struct.unpack('>i',header)[0]
+        data = b''
+        while len(data) < msg_len:
+            chunk = conn.recv(msg_len - len(data))
+            if not chunk:
+                print("Client closed connection while sending request")
+                return
+            data += chunk
+        print(f"Received full request of length {len(data)}")
 
-        # Receive request (can adjust buffer size; 1024 is fine for now)
-        data = conn.recv(1024)
-        print(f"Received data of length {len(data)}")
+        api_key_recieved = struct.unpack(">h",data[0:2])[0]
+        api_version_recieved = struct.unpack(">h",data[2:4])[0]
+        correlation_id = struct.unpack(">i", data[4:8])[0]
+        print(f"Parsed api_key={api_key_recieved}, api_version={api_version_recieved}, correlation_id={correlation_id}")
 
-        request_api_bytes = data[6:8]
-        request_api = struct.unpack(">h",request_api_bytes)[0]
-
-        if request_api > 4 or request_api < 0:
+        if api_version_recieved > 4 or api_version_recieved < 0:
             error_code = struct.pack(">h",35)
         else:
             error_code = struct.pack(">h",0)
-
-        api_key_recieved = struct.unpack(">h",data[4:6])[0]
-        api_version_recieved = struct.unpack(">h",data[6:8])[0]
-        correlation_id = struct.unpack(">i", data[8:12])[0]
-        print(f"Parsed api_key={api_key_recieved}, api_version={api_version_recieved}, correlation_id={correlation_id}")
-
+        
         # Build response
 
         response_correlation_id = struct.pack(">i", correlation_id)
@@ -63,7 +64,20 @@ def main():
         # Send response and close
         conn.sendall(response)
         print(f"Sent response with correlation_id={correlation_id}")
+
+def main():
+    print("Starting plain-socket Kafka-like broker on port 9092...")
+
+    # Create TCP server socket
+    server = socket.create_server(("localhost", 9092), reuse_port=True)
+
+    while True:
+        # Wait for client
+        conn, addr = server.accept()
+        print(f"Accepted connection from {addr}")
+        handleClient(conn)
         conn.close()
+        print("Closed Connection")
 
 if __name__ == "__main__":
     main()
