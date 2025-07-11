@@ -47,7 +47,7 @@ def handleClient(conn):
                 (75,0,0)
             }
 
-            num_api_keys = b'\x04'
+            num_api_keys = b'\x02'
             
             api_keys = b''.join(
                 pack_api_key_entry(api_k,min_v,max_v)
