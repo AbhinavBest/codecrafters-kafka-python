@@ -1,69 +1,74 @@
 import socket
 import struct
+import threading
 
 def handleClient(conn):
-    while True:
-        header = conn.recv(4)
-        if not header:
-            print("Client closed connection")
-            break
-        if len(header) < 4:
-            print("Incomplete connection request")
-            break
-        msg_len = struct.unpack('>i',header)[0]
-        data = b''
-        while len(data) < msg_len:
-            chunk = conn.recv(msg_len - len(data))
-            if not chunk:
-                print("Client closed connection while sending request")
-                return
-            data += chunk
-        print(f"Received full request of length {len(data)}")
+    try:
+        while True:
+            header = conn.recv(4)
+            if not header:
+                print("Client closed connection")
+                break
+            if len(header) < 4:
+                print("Incomplete connection request")
+                break
+            msg_len = struct.unpack('>i',header)[0]
+            data = b''
+            while len(data) < msg_len:
+                chunk = conn.recv(msg_len - len(data))
+                if not chunk:
+                    print("Client closed connection while sending request")
+                    return
+                data += chunk
+            print(f"Received full request of length {len(data)}")
 
-        api_key_recieved = struct.unpack(">h",data[0:2])[0]
-        api_version_recieved = struct.unpack(">h",data[2:4])[0]
-        correlation_id = struct.unpack(">i", data[4:8])[0]
-        print(f"Parsed api_key={api_key_recieved}, api_version={api_version_recieved}, correlation_id={correlation_id}")
+            api_key_recieved = struct.unpack(">h",data[0:2])[0]
+            api_version_recieved = struct.unpack(">h",data[2:4])[0]
+            correlation_id = struct.unpack(">i", data[4:8])[0]
+            print(f"Parsed api_key={api_key_recieved}, api_version={api_version_recieved}, correlation_id={correlation_id}")
 
-        if api_version_recieved > 4 or api_version_recieved < 0:
-            error_code = struct.pack(">h",35)
-        else:
-            error_code = struct.pack(">h",0)
-        
-        # Build response
+            if api_version_recieved > 4 or api_version_recieved < 0:
+                error_code = struct.pack(">h",35)
+            else:
+                error_code = struct.pack(">h",0)
+            
+            # Build response
 
-        response_correlation_id = struct.pack(">i", correlation_id)
+            response_correlation_id = struct.pack(">i", correlation_id)
 
-        num_api_keys = struct.pack(">b",2)
+            num_api_keys = struct.pack(">b",2)
 
-        api_key = struct.pack(">h",18)
-        min_version = struct.pack(">h",0)
-        max_version = struct.pack(">h",4)
+            api_key = struct.pack(">h",18)
+            min_version = struct.pack(">h",0)
+            max_version = struct.pack(">h",4)
 
-        api_keys = api_key + min_version + max_version
+            api_keys = api_key + min_version + max_version
 
-        tag_buffer = b'\x00'
+            tag_buffer = b'\x00'
 
-        throttle_time_ms = struct.pack(">i",0)
+            throttle_time_ms = struct.pack(">i",0)
 
-        response_body = (
-            error_code +
-            num_api_keys +
-            api_keys +
-            tag_buffer +
-            throttle_time_ms +
-            tag_buffer
-        )
-        
+            response_body = (
+                error_code +
+                num_api_keys +
+                api_keys +
+                tag_buffer +
+                throttle_time_ms +
+                tag_buffer
+            )
+            
 
-        response_payload = response_correlation_id + response_body
+            response_payload = response_correlation_id + response_body
 
-        message_size = struct.pack(">i", len(response_payload))
-        response = message_size + response_payload
+            message_size = struct.pack(">i", len(response_payload))
+            response = message_size + response_payload
 
-        # Send response and close
-        conn.sendall(response)
-        print(f"Sent response with correlation_id={correlation_id}")
+            # Send response and close
+            conn.sendall(response)
+            print(f"Sent response with correlation_id={correlation_id}")
+    finally:
+        conn.close()
+        print("Closed Connection")
 
 def main():
     print("Starting plain-socket Kafka-like broker on port 9092...")
@@ -75,9 +80,7 @@ def main():
         # Wait for client
         conn, addr = server.accept()
         print(f"Accepted connection from {addr}")
-        handleClient(conn)
-        conn.close()
-        print("Closed Connection")
+        threading.Thread(target=handleClient, args=(conn,)).start()
 
 if __name__ == "__main__":
     main()
