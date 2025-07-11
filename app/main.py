@@ -43,7 +43,7 @@ def handleClient(conn):
                     struct.pack(">h", max_version)
                 )
             supported_api_versions = {
-                (18,0,4)
+                (18,0,4),
                 (75,0,0)
             }
 
