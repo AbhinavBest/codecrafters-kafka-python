@@ -56,7 +56,7 @@ def handleClient(conn):
             response_correlation_id = struct.pack(">i", correlation_id)
 
             body = error_code
-            body += encode_unsigned_varint(len(supported_api_versions))
+            body += encode_unsigned_varint(len(supported_api_versions)+1)
             for api_k, min_v, max_v in supported_api_versions:
                 body += struct.pack(">hhh", api_k, min_v, max_v)
                 # tagged_fields for this entry (empty)
