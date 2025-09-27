@@ -47,7 +47,7 @@ def handleClient(conn):
             correlation_id = struct.unpack(">i", data[4:8])[0]
             print(f"Parsed api_key={api_key}, api_version={api_version}, correlation_id={correlation_id}")
 
-            # error_code
+            # error_code1
             if api_version > 4 or api_version < 0:
                 error_code = struct.pack(">h", 35)
             else:
