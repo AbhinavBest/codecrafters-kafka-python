@@ -84,9 +84,8 @@ def handleClient(conn):
                 client_id_len = struct.unpack(">h", data[pos:pos+2])[0]
                 pos += 2
                 if client_id_len >= 0:
-                    pos += client_id_len  # skip client_id
+                    pos += client_id_len
                 
-                # parse topics array
                 topics_array_len = struct.unpack(">i", data[pos:pos+4])[0]
                 pos += 4
                 topic_name_len = struct.unpack(">h", data[pos:pos+2])[0]
@@ -96,48 +95,31 @@ def handleClient(conn):
 
                 print(f"DescribeTopicPartitions request for topic={topic_name}")
 
-                # Build response dynamically
-                if topic_name in valid_topics:
-                    error_code = struct.pack(">h", 0)  # SUCCESS
-                    partitions = valid_topics[topic_name]
-                else:
-                    error_code = struct.pack(">h", 3)  # UNKNOWN_TOPIC_OR_PARTITION
-                    partitions = []
+                # UNKNOWN_TOPIC_OR_PARTITION
+                error_code = struct.pack(">h", 3)
 
                 body = encode_unsigned_varint(0)  # top-level tagged fields
-                body += struct.pack(">i", 0)  # throttle_time_ms
-                body += struct.pack(">i", 1)  # array length = 1 topic
+                body += struct.pack(">i", 0)      # throttle_time_ms
+                body += struct.pack(">i", 1)      # array length = 1 topic
 
                 # topic result
                 body += error_code
                 body += struct.pack(">h", len(topic_name)) + topic_name.encode("utf-8")
-                body += uuid.UUID(int=0).bytes  # topic_id = all zeros
-                body += struct.pack(">?", False)  # is_internal
-
-                # partitions array
-                body += struct.pack(">i", len(partitions))
-                for p in partitions:
-                    body += struct.pack(">i", p)        # partition index
-                    body += struct.pack(">h", 0)        # error_code = SUCCESS
-                    body += struct.pack(">i", -1)       # leader_id (unknown, so -1)
-                    body += struct.pack(">i", 0)        # leader_epoch
-                    body += struct.pack(">i", 0)        # replicas array length
-                    body += struct.pack(">i", 0)        # isr array length
-                    body += struct.pack(">i", 0)        # removing_replicas length
-                    body += struct.pack(">i", 0)        # adding_replicas length
-                    body += struct.pack(">i", -2147483648)  # partition_authorized_operations
-                    body += encode_unsigned_varint(0)   # tagged fields for partition
-
+                body += uuid.UUID(int=0).bytes      # topic_id = all zeros
+                body += struct.pack(">?", False)    # is_internal
+                body += struct.pack(">i", 0)        # partitions array (empty)
                 body += struct.pack(">i", -2147483648)  # topic_authorized_operations
-                body += encode_unsigned_varint(0)       # tagged fields for topic
+                body += encode_unsigned_varint(0)   # tagged fields for topic
 
-                body += struct.pack(">i", -1)  # next_cursor = null
-                body += encode_unsigned_varint(0)  # final tagged fields
+                body += struct.pack(">i", -1)       # next_cursor = null
+                body += encode_unsigned_varint(0)   # final tagged fields
 
                 response_payload = response_correlation_id + body
                 response = struct.pack(">i", len(response_payload)) + response_payload
+
                 conn.sendall(response)
-                print(f"Sent DescribeTopicPartitions response for topic={topic_name}, correlation_id={correlation_id}")
+                print(f"Sent DescribeTopicPartitions UNKNOWN_TOPIC for {topic_name}, correlation_id={correlation_id}")
+
 
 
 
